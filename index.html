@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>朱雀趋势系统</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --fire1:#ff4d2e; --fire2:#ff7a18; --fire3:#ffc247;
+  --blue:#4da8ff; --purple:#a06bff;
+}
+html,body{height:auto;min-height:100%}
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(1200px 800px at 50% -10%, #2b1045 0%, transparent 60%),
+    radial-gradient(900px 700px at 85% 110%, #3a0f2e 0%, transparent 55%),
+    radial-gradient(700px 600px at 10% 100%, #12264a 0%, transparent 55%),
+    #0a0a14;
+  color:#fff;font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
+  overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;
+}
+#bg{position:fixed;inset:0;z-index:0}
+.glow{position:fixed;border-radius:50%;filter:blur(60px);opacity:.35;z-index:0;pointer-events:none;animation:breath 6s ease-in-out infinite}
+@keyframes breath{0%,100%{opacity:.25;transform:scale(1)}50%{opacity:.5;transform:scale(1.08)}}
+.main{
+  position:relative;z-index:2;text-align:center;padding:40px 20px;
+  max-width:900px;width:100%;margin:0 auto;
+  min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;
+}
+/* ===== 朱雀Logo ===== */
+.logo-wrap{position:relative;width:118px;height:118px;margin:0 auto 20px}
+.logo-ring{position:absolute;inset:0;border-radius:50%;
+  border:2px solid rgba(255,122,24,.5);
+  box-shadow:0 0 40px rgba(255,74,46,.35), inset 0 0 40px rgba(255,122,24,.15);
+  animation:spin 18s linear infinite}
+.logo-ring::before,.logo-ring::after{content:'';position:absolute;border-radius:50%;border:1px dashed rgba(255,194,71,.4)}
+.logo-ring::before{inset:10px;animation:spin 12s linear infinite reverse}
+.logo-ring::after{inset:22px;border-color:rgba(255,74,46,.35);animation:spin 8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.logo-core{position:absolute;inset:28px;border-radius:50%;
+  background:radial-gradient(circle at 32% 28%,#ffc247,#ff7a18 45%,#c62828 90%);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 50px rgba(255,122,24,.7), inset 0 -6px 20px rgba(0,0,0,.35);
+  animation:coreglow 3s ease-in-out infinite}
+@keyframes coreglow{0%,100%{box-shadow:0 0 40px rgba(255,122,24,.6)}50%{box-shadow:0 0 70px rgba(255,74,46,.9)}}
+.logo-core span{font-size:30px;font-weight:900;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.5);letter-spacing:2px}
+/* ===== 标题 ===== */
+.title{
+  font-size:42px;font-weight:900;letter-spacing:6px;
+  background:linear-gradient(120deg,#ffc247 0%,#ff7a18 35%,#ff4d2e 65%,#ffc247 100%);
+  background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:titleflow 4s linear infinite;text-shadow:0 0 40px rgba(255,122,24,.25)}
+@keyframes titleflow{to{background-position:200% center}}
+.subtitle{margin-top:12px;color:#b8aecb;font-size:13px;letter-spacing:3px;font-weight:300}
+.subtitle b{color:var(--fire3);font-weight:600}
+.divider{width:100px;height:1px;margin:22px auto;background:linear-gradient(90deg,transparent,#ff7a18,transparent)}
+/* ===== 两大按钮 ===== */
+.btns{display:flex;gap:22px;justify-content:center;flex-wrap:wrap;margin-top:6px}
+.btn-card{
+  position:relative;width:232px;padding:26px 18px 22px;border-radius:18px;text-decoration:none;color:#fff;
+  background:linear-gradient(160deg,rgba(255,255,255,.08),rgba(255,255,255,.02));
+  border:1px solid rgba(255,255,255,.14);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  transition:transform .35s cubic-bezier(.2,.9,.3,1.4),box-shadow .35s;cursor:pointer;display:block}
+.btn-card::before{content:'';position:absolute;inset:0;border-radius:18px;padding:1.5px;background:linear-gradient(135deg,var(--c1),var(--c2));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.75}
+.btn-card:hover{transform:translateY(-8px) scale(1.02)}
+.btn-card.obs{--c1:#ff4d2e;--c2:#ffc247;box-shadow:0 0 30px rgba(255,74,46,.16)}
+.btn-card.obs:hover{box-shadow:0 14px 50px rgba(255,74,46,.42)}
+.btn-card.bt{--c1:#4da8ff;--c2:#a06bff;box-shadow:0 0 30px rgba(77,168,255,.14)}
+.btn-card.bt:hover{box-shadow:0 14px 50px rgba(77,168,255,.4)}
+.btn-icon{font-size:40px;line-height:1;filter:drop-shadow(0 5px 14px rgba(0,0,0,.4))}
+.btn-card.obs .btn-icon{animation:floaty 3.5s ease-in-out infinite}
+.btn-card.bt .btn-icon{animation:floaty 3.5s ease-in-out .6s infinite}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.btn-name{margin-top:14px;font-size:21px;font-weight:800;letter-spacing:2px}
+.btn-card.obs .btn-name{color:var(--fire3)}
+.btn-card.bt .btn-name{color:#7cc0ff}
+.btn-desc{margin-top:8px;font-size:11.5px;color:#b8aecb;line-height:1.65;letter-spacing:1px}
+.btn-go{margin-top:14px;display:inline-block;font-size:11px;color:#fff;opacity:.85;letter-spacing:2px}
+.btn-card.obs .btn-go{color:var(--fire3)}
+.btn-card.bt .btn-go{color:#7cc0ff}
+/* ===== 底部 ===== */
+.foot{position:relative;z-index:2;text-align:center;color:#5a5470;font-size:11px;letter-spacing:2px;padding:26px 12px 30px}
+.foot .ver{display:inline-block;margin-left:8px;padding:2px 8px;border:1px solid rgba(255,122,24,.3);border-radius:10px;color:rgba(255,194,71,.6);font-size:10px}
+
+/* ===== 注册使用窗口 ===== */
+.auth-box{
+  margin-top:36px;width:100%;max-width:420px;
+  background:linear-gradient(160deg,rgba(255,255,255,.06),rgba(255,255,255,.02));
+  border:1px solid rgba(255,255,255,.12);border-radius:16px;
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  padding:22px 24px;text-align:left;
+}
+.auth-box-title{font-size:14px;font-weight:700;color:var(--fire3);letter-spacing:1px;margin-bottom:14px;text-align:center}
+.auth-tabs{display:flex;gap:8px;margin-bottom:14px}
+.auth-tab{flex:1;padding:8px;border:1px solid rgba(255,255,255,.15);background:transparent;color:#b8aecb;border-radius:8px;cursor:pointer;font-size:13px;transition:.2s}
+.auth-tab.active{background:linear-gradient(135deg,var(--fire1),var(--fire2));border-color:transparent;color:#fff;font-weight:600}
+#authForm{display:flex;flex-direction:column;gap:10px}
+#authForm input{padding:10px 12px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.25);border-radius:8px;color:#fff;font-size:13px;outline:none;transition:.2s}
+#authForm input:focus{border-color:var(--fire2)}
+.auth-submit{padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,var(--fire1),var(--fire2));color:#fff;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:2px;transition:.2s}
+.auth-submit:hover{opacity:.9}
+.auth-submit:disabled{opacity:.5;cursor:not-allowed}
+.auth-error{color:#ff6b6b;font-size:12px;min-height:16px;text-align:center;margin:0}
+.auth-guest{width:100%;margin-top:8px;padding:8px;border:1px dashed rgba(255,255,255,.2);background:transparent;color:#8a82a0;border-radius:8px;cursor:pointer;font-size:12px;transition:.2s}
+.auth-guest:hover{color:#b8aecb;border-color:rgba(255,255,255,.35)}
+.auth-box-logged{text-align:center}
+.auth-box-logged p{margin:6px 0;color:#b8aecb;font-size:13px}
+.auth-box-logged b{color:var(--fire3)}
+.auth-tip{font-size:11px;color:#8a82a0!important}
+.auth-logout{margin-top:10px;padding:8px 20px;border:1px solid rgba(255,107,107,.4);background:transparent;color:#ff6b6b;border-radius:8px;cursor:pointer;font-size:12px;transition:.2s}
+.auth-logout:hover{background:rgba(255,107,107,.1)}
+.hidden{display:none!important}
+/* ===== 手机适配 ===== */
+@media(max-width:600px){
+  .main{padding:28px 16px}
+  .logo-wrap{width:92px;height:92px;margin:0 auto 16px}
+  .logo-core{inset:22px}
+  .logo-core span{font-size:24px}
+  .title{font-size:32px;letter-spacing:4px}
+  .subtitle{font-size:11.5px;letter-spacing:2px}
+  .divider{margin:18px auto}
+  .btns{flex-direction:column;gap:16px;align-items:center;margin-top:2px}
+  .btn-card{width:min(88%,300px);padding:20px 16px;border-radius:16px}
+  .btn-icon{font-size:34px}
+  .btn-name{margin-top:12px;font-size:19px}
+  .btn-desc{font-size:11px}
+  .btn-go{margin-top:12px;font-size:11px}
+  .foot{padding:22px 12px 24px}
+}
+</style>
+</head>
+<body>
+<div class="glow" style="width:500px;height:500px;background:#ff4d2e;top:-180px;left:-120px"></div>
+<div class="glow" style="width:400px;height:400px;background:#a06bff;bottom:-140px;right:-100px;animation-delay:2s"></div>
+<canvas id="bg"></canvas>
+<div class="main">
+  <div class="logo-wrap">
+    <div class="logo-ring"></div>
+    <div class="logo-core"><span>朱雀</span></div>
+  </div>
+  <h1 class="title">朱雀趋势系统</h1>
+  <p class="subtitle">ZHŪQUÈ · 中证500ETF · <b>15分钟趋势交易体系</b></p>
+  <div class="divider"></div>
+  <div class="btns">
+    <a class="btn-card obs" href="observe.html">
+      <div class="btn-icon">🔥</div>
+      <div class="btn-name">观察系统</div>
+      <div class="btn-desc">实时行情 · 持仓监控<br>15分钟K线 · 自动交易执行</div>
+      <div class="btn-go">进入观察系统 →</div>
+    </a>
+    <a class="btn-card bt" href="backtest.html">
+      <div class="btn-icon">📈</div>
+      <div class="btn-name">回测系统</div>
+      <div class="btn-desc">历史回测 · 参数调优<br>绩效统计 · 交易明细复盘</div>
+      <div class="btn-go">进入回测系统 →</div>
+    </a>
+  </div>
+
+  <!-- 注册使用窗口 -->
+  <div class="auth-box" id="authBox">
+    <div class="auth-box-title">
+      <span id="authUserInfo" class="hidden"></span>
+      <span id="authTitle">注册使用 · 云端保存交易记录</span>
+    </div>
+    <div class="auth-box-body" id="authBody">
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">登录</button>
+        <button class="auth-tab" data-tab="signup">注册</button>
+      </div>
+      <form id="authForm">
+        <input type="text" id="authUsername" placeholder="用户名" required>
+        <input type="password" id="authPassword" placeholder="密码（至少6位）" minlength="6" required>
+        <button type="submit" class="auth-submit" id="authSubmit">登录</button>
+        <p class="auth-error" id="authError"></p>
+      </form>
+      <button class="auth-guest" id="authGuest">先不登录，本地使用</button>
+    </div>
+    <div class="auth-box-logged hidden" id="authLogged">
+      <p>已登录：<b id="loggedUsername"></b></p>
+      <p class="auth-tip">交易记录和持仓将自动云端保存</p>
+      <button class="auth-logout" id="authLogout">退出登录</button>
+    </div>
+  </div>
+</div>
+<div class="foot">朱雀趋势 · 仅供研究参考，不构成投资建议<span class="ver">v3.0</span></div>
+<script>
+// ===== 朱雀火焰粒子 =====
+const cv=document.getElementById('bg'),ctx=cv.getContext('2d');
+let W,H,parts=[];
+function resize(){W=cv.width=innerWidth;H=cv.height=innerHeight}
+resize();addEventListener('resize',resize);
+const COLORS=['rgba(255,74,46,','rgba(255,122,24,','rgba(255,194,71,','rgba(77,168,255,'];
+function spawn(n){
+  for(let i=0;i<n;i++)parts.push({
+    x:Math.random()*W,y:Math.random()*H,r:Math.random()*2.2+.5,
+    vy:-(Math.random()*0.45+.12),vx:(Math.random()-.5)*.3,
+    c:COLORS[Math.floor(Math.random()*COLORS.length)],
+    a:Math.random()*.6+.15,life:Math.random()*160+40});
+}
+spawn(90);
+function tick(){
+  ctx.clearRect(0,0,W,H);
+  for(let i=parts.length-1;i>=0;i--){
+    const p=parts[i];p.x+=p.vx;p.y+=p.vy;p.life--;
+    const tw=Math.sin(p.life/20)*.2+.8;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    ctx.fillStyle=p.c+(p.a*tw)+')';ctx.fill();
+    if(p.life<=0||p.y<-10||p.x<-10||p.x>W+10){
+      parts.splice(i,1);
+      parts.push({x:Math.random()*W,y:H+8,r:Math.random()*2.2+.5,
+        vy:-(Math.random()*0.45+.12),vx:(Math.random()-.5)*.3,
+        c:COLORS[Math.floor(Math.random()*COLORS.length)],
+        a:Math.random()*.6+.15,life:Math.random()*160+40});
+    }
+  }
+  requestAnimationFrame(tick);
+}
+tick();
+// ===== 主按钮点击涟漪 =====
+document.querySelectorAll('.btn-card').forEach(b=>{
+  b.addEventListener('click',function(e){
+    const r=document.createElement('div');
+    r.style.cssText='position:absolute;border-radius:50%;pointer-events:none;width:20px;height:20px;background:rgba(255,255,255,.35);left:'+e.offsetX+'px;top:'+e.offsetY+'px;transform:translate(-50%,-50%) scale(0);transition:.6s;z-index:5';
+    this.appendChild(r);
+    requestAnimationFrame(()=>{r.style.transform='translate(-50%,-50%) scale(30)';r.style.opacity='0'});
+    setTimeout(()=>r.remove(),600);
+  });
+});
+
+// ===== 注册登录 =====
+const TOKEN_KEY='zhuque_token';
+const USER_KEY='zhuque_user';
+let authMode='login';
+
+function getToken(){return localStorage.getItem(TOKEN_KEY)}
+function setToken(t){localStorage.setItem(TOKEN_KEY,t)}
+function clearAuth(){localStorage.removeItem(TOKEN_KEY);localStorage.removeItem(USER_KEY)}
+function getUser(){try{return JSON.parse(localStorage.getItem(USER_KEY))}catch{return null}}
+function setUser(u){localStorage.setItem(USER_KEY,JSON.stringify(u))}
+
+async function api(path,opts={}){
+  const token=getToken();
+  const headers={'Content-Type':'application/json',...(opts.headers||{})};
+  if(token)headers['Authorization']=`Bearer ${token}`;
+  const res=await fetch(`/api${path}`,{...opts,headers});
+  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error||'请求失败')}
+  return res.json();
+}
+
+function showLogged(username){
+  document.getElementById('authBody').classList.add('hidden');
+  document.getElementById('authLogged').classList.remove('hidden');
+  document.getElementById('authTitle').classList.add('hidden');
+  document.getElementById('authUserInfo').classList.remove('hidden');
+  document.getElementById('authUserInfo').textContent='☁️ 已登录 · 云端同步';
+  document.getElementById('loggedUsername').textContent=username;
+}
+
+function showAuthForm(){
+  document.getElementById('authBody').classList.remove('hidden');
+  document.getElementById('authLogged').classList.add('hidden');
+  document.getElementById('authTitle').classList.remove('hidden');
+  document.getElementById('authUserInfo').classList.add('hidden');
+}
+
+// 初始化
+(function initAuth(){
+  const user=getUser();
+  if(user&&getToken()){
+    showLogged(user.username);
+  }else{
+    showAuthForm();
+  }
+})();
+
+// tab切换
+document.querySelectorAll('.auth-tab').forEach(tab=>{
+  tab.onclick=()=>{
+    document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    authMode=tab.dataset.tab;
+    document.getElementById('authSubmit').textContent=authMode==='login'?'登录':'注册';
+    document.getElementById('authError').textContent='';
+  };
+});
+
+// 提交
+document.getElementById('authForm').onsubmit=async e=>{
+  e.preventDefault();
+  const username=document.getElementById('authUsername').value.trim();
+  const password=document.getElementById('authPassword').value;
+  const errEl=document.getElementById('authError');
+  const btn=document.getElementById('authSubmit');
+  errEl.textContent='';
+  btn.disabled=true;
+  btn.textContent='请稍候…';
+  try{
+    const result=await api(`/auth/${authMode}`,{
+      method:'POST',
+      body:JSON.stringify({username,password})
+    });
+    setToken(result.token);
+    setUser(result.user);
+    showLogged(result.user.username);
+  }catch(err){
+    errEl.textContent=err.message;
+  }finally{
+    btn.disabled=false;
+    btn.textContent=authMode==='login'?'登录':'注册';
+  }
+};
+
+// 游客模式
+document.getElementById('authGuest').onclick=()=>{
+  clearAuth();
+  showAuthForm();
+};
+
+// 退出登录
+document.getElementById('authLogout').onclick=()=>{
+  clearAuth();
+  showAuthForm();
+  document.getElementById('authUsername').value='';
+  document.getElementById('authPassword').value='';
+};
+</script>
+</body>
+</html>

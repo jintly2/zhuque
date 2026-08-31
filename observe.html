@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>朱雀MA60+MACD · 15分钟决策助手</title>
+<style>
+:root{
+  --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --border:#2d333b;
+  --text:#e6edf3; --text2:#9aa4b2; --text3:#6e7681;
+  --up:#ff5c5c; --down:#39d353; --accent:#7ab3ff; --warn:#e6c45c;
+  --mono:'SF Mono',Consolas,'Courier New',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;min-height:100vh}
+.wrap{max-width:980px;margin:0 auto;padding:12px}
+/* ===== 顶部 ===== */
+.header{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;background:var(--panel);border:1px solid var(--border);border-radius:10px}
+.header .logo{font-weight:800;font-size:15px;color:var(--accent);white-space:nowrap}
+.header .logo span{color:var(--text2);font-weight:400;font-size:11px}
+select,input.sym{background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px;outline:none}
+input.sym{width:80px;font-family:var(--mono)}
+.hdr-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);background:var(--panel2);border:1px solid var(--border);padding:4px 10px;border-radius:6px}
+.hdr-item b{color:var(--text);font-family:var(--mono)}
+.hdr-item .price{font-size:15px;font-weight:700;color:var(--text)}
+.hdr-item .up{color:var(--up)}.hdr-item .down{color:var(--down)}
+.hdr-item .clock{font-family:var(--mono);font-size:11px;color:var(--text3)}
+.hdr-spacer{flex:1}
+.btn{background:var(--accent);color:#0d1117;border:none;border-radius:6px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer}
+.btn:disabled{opacity:.5;cursor:wait}
+.btn.ghost{background:var(--panel2);color:var(--text2);border:1px solid var(--border)}
+.btn.buy{background:var(--up);color:#111}
+.btn.sell{background:var(--down);color:#111}
+.toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)}
+.toggle input{accent-color:var(--accent)}
+/* ===== 状态卡片 ===== */
+.state-card{margin-top:12px;padding:16px;background:var(--panel);border:1px solid var(--border);border-radius:10px}
+.state-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.sig-badge{font-size:13px;font-weight:700;padding:4px 12px;border-radius:20px;border:1px solid}
+.sig-badge.buy{color:#111;background:var(--up);border-color:var(--up)}
+.sig-badge.hold{color:#111;background:var(--warn);border-color:var(--warn)}
+.sig-badge.wait{color:#111;background:var(--down);border-color:var(--down)}
+.sig-badge.none{color:var(--text2);background:var(--panel2);border-color:var(--border)}
+.state-title{font-size:19px;font-weight:800;flex:1}
+.state-desc{margin-top:10px;color:var(--text2);font-size:13px;line-height:1.7}
+.state-pred{margin-top:12px;padding:12px;background:var(--panel2);border-left:3px solid var(--accent);border-radius:6px;font-size:13px;line-height:1.8;color:var(--text)}
+.state-pred b{color:var(--accent)}
+/* ===== 持仓卡片 ===== */
+.pos-card{margin-top:12px;padding:14px;background:var(--panel);border:1px solid var(--border);border-radius:10px;border-left:3px solid var(--accent)}
+.pos-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pos-tag{font-size:12px;font-weight:700;padding:3px 10px;border-radius:14px}
+.pos-tag.in{background:rgba(255,92,92,.15);color:var(--up);border:1px solid var(--up)}
+.pos-tag.out{background:rgba(57,211,83,.12);color:var(--down);border:1px solid var(--down)}
+.pos-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:10px}
+.pos-grid .pg .k{font-size:10px;color:var(--text3)}
+.pos-grid .pg .v{font-size:15px;font-weight:700;font-family:var(--mono);margin-top:2px}
+.pos-grid .pg .v.up{color:var(--up)}.pos-grid .pg .v.down{color:var(--down)}
+.pos-alert{margin-top:10px;padding:8px 12px;border-radius:6px;font-size:12.5px;line-height:1.7;display:none}
+.pos-alert.show{display:block}
+.pos-alert.warn{background:rgba(230,196,92,.1);border:1px solid rgba(230,196,92,.4);color:var(--warn)}
+.pos-alert.act{background:rgba(255,92,92,.1);border:1px solid rgba(255,92,92,.4);color:var(--up)}
+.pos-alert.ok{background:rgba(57,211,83,.08);border:1px solid rgba(57,211,83,.35);color:var(--down)}
+.pos-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+/* ===== 指标网格 ===== */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+.kpi .k{font-size:11px;color:var(--text3);margin-bottom:4px}
+.kpi .v{font-size:16px;font-weight:700;font-family:var(--mono)}
+.kpi .v.up{color:var(--up)}.kpi .v.down{color:var(--down)}.kpi .v.warn{color:var(--warn)}
+.kpi .sub{font-size:11px;color:var(--text3);margin-top:3px}
+/* ===== 面板 ===== */
+.panel{margin-top:12px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px}
+.panel h3{font-size:14px;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.panel h3::before{content:'';width:3px;height:14px;background:var(--accent);border-radius:2px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{color:var(--text3);font-weight:500;text-align:right;padding:5px 6px;border-bottom:1px solid var(--border)}
+td{text-align:right;padding:5px 6px;font-family:var(--mono);border-bottom:1px solid #21262d}
+th:first-child,td:first-child{text-align:left}
+.up{color:var(--up)}.down{color:var(--down)}.flat{color:var(--text2)}
+canvas{width:100%;height:300px;display:block;background:var(--panel2);border-radius:8px;margin-top:6px}
+.legend{display:flex;gap:14px;font-size:11px;color:var(--text3);margin-top:6px;flex-wrap:wrap}
+.legend span{display:flex;align-items:center;gap:4px}
+.dot{width:10px;height:3px;border-radius:2px;display:inline-block}
+.foot{text-align:center;color:var(--text3);font-size:11px;margin:16px 0 8px;line-height:1.6}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#2ea043;color:#fff;padding:8px 18px;border-radius:6px;font-size:13px;z-index:99;opacity:0;transition:.3s}
+.toast.warn{background:#d29922}.toast.err{background:#f85149}
+/* ===== 持仓/空仓大横幅 ===== */
+.pos-banner{display:flex;align-items:center;gap:14px;margin-top:12px;padding:14px 16px;border-radius:10px;border:1px solid;transition:.3s}
+.pos-banner.in{background:rgba(255,92,92,.08);border-color:rgba(255,92,92,.45)}
+.pos-banner.out{background:rgba(57,211,83,.06);border-color:rgba(57,211,83,.35)}
+.pb-dot{width:16px;height:16px;border-radius:50%;flex-shrink:0;transition:.3s}
+.pos-banner.in .pb-dot{background:var(--up);box-shadow:0 0 14px rgba(255,92,92,.8);animation:pulse 1.4s infinite}
+.pos-banner.out .pb-dot{background:var(--down);box-shadow:0 0 12px rgba(57,211,83,.7)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+.pb-main{flex:1;min-width:0}
+.pb-text{font-size:20px;font-weight:800;line-height:1.2}
+.pos-banner.in .pb-text{color:var(--up)}
+.pos-banner.out .pb-text{color:var(--down)}
+.pb-sub{font-size:12px;color:var(--text2);margin-top:4px;line-height:1.5}
+.pb-right{font-size:12.5px;color:var(--text2);text-align:right;white-space:nowrap}
+.pb-right b{font-family:var(--mono);font-size:16px;font-weight:700}
+/* 自动交易状态标签 */
+.auto-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid}
+.auto-badge.on{color:var(--up);background:rgba(255,92,92,.12);border-color:rgba(255,92,92,.5)}
+.auto-badge.off{color:var(--text3);background:var(--panel2);border-color:var(--border)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div class="logo">朱雀<span> · 15分钟 MA60+MACD</span></div>
+    <select id="assetSel" onchange="onAssetChange()"></select>
+    <input class="sym" id="symInput" placeholder="自定义代码">
+    <button class="btn ghost" style="padding:5px 8px" onclick="onCustomAsset()">用</button>
+    <div class="hdr-item"><span>现价</span><b class="price" id="hdrPrice">--</b><b id="hdrChg" class="flat">--</b></div>
+    <div class="hdr-spacer"></div>
+    <div class="hdr-item" id="cloudBadge" style="padding:4px 8px;border-radius:12px;font-size:11px">本地模式</div>
+    <div class="hdr-item"><span class="clock" id="hdrTime">--</span></div>
+    <button class="btn ghost" onclick="fetchFromAPI(true)">刷新</button>
+    <label class="toggle"><input type="checkbox" id="autoToggle" checked onchange="setupAuto()"> 自动刷新</label>
+    <label class="toggle"><input type="checkbox" id="autoTradeToggle" checked onchange="updateAutoTradeUI()"> 自动交易</label>
+  </div>
+  <!-- 持仓/空仓大横幅 -->
+  <div class="pos-banner out" id="posBanner">
+    <div class="pb-dot"></div>
+    <div class="pb-main">
+      <div class="pb-text" id="pbText">当前空仓</div>
+      <div class="pb-sub" id="pbSub">自动交易已开启 · 出现多头信号将自动买入100万</div>
+    </div>
+    <div class="pb-right" id="pbRight">固定100万/笔</div>
+  </div>
+
+  <div class="state-card">
+    <div class="state-top">
+      <div class="sig-badge none" id="sigBadge">读取中…</div>
+      <div class="state-title" id="stateTitle">正在获取数据…</div>
+      <div class="hdr-item" id="dataTime"><span>K线时间</span><b>--</b></div>
+    </div>
+    <div class="state-desc" id="stateDesc">--</div>
+    <div class="state-pred" id="statePred">--</div>
+  </div>
+
+  <!-- 模拟持仓 -->
+  <div class="pos-card">
+    <div class="pos-top">
+      <div class="pos-tag out" id="posTag">空仓</div>
+      <b id="posTitle">模拟持仓（固定100万/笔）</b>
+    </div>
+    <div class="pos-grid">
+      <div class="pg"><div class="k">入场时间</div><div class="v" id="pgTime">--</div></div>
+      <div class="pg"><div class="k">入场价</div><div class="v" id="pgIn">--</div></div>
+      <div class="pg"><div class="k">现价</div><div class="v" id="pgNow">--</div></div>
+      <div class="pg"><div class="k">浮动盈亏</div><div class="v" id="pgPnl">--</div></div>
+      <div class="pg"><div class="k">累计平仓盈亏</div><div class="v" id="pgTotal">--</div></div>
+      <div class="pg"><div class="k">交易笔数</div><div class="v" id="pgN">0</div></div>
+    </div>
+    <div class="pos-alert" id="posAlert"></div>
+    <div class="pos-actions">
+      <button class="btn buy" id="btnBuy" onclick="doBuy()">自动模拟买入</button>
+      <button class="btn sell" id="btnSell" onclick="doSell()">自动模拟卖出</button>
+      <button class="btn ghost" onclick="doClear()">清空记录</button>
+    </div>
+    <div style="margin-top:12px;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      <span>最近交易记录：</span>
+      <span style="flex:1"></span>
+      <button class="btn ghost" style="padding:3px 8px;font-size:11px" onclick="exportBackup()">⬇ 导出备份</button>
+      <label class="btn ghost" style="padding:3px 8px;font-size:11px;cursor:pointer">⬆ 导入备份
+        <input type="file" accept=".json,application/json" style="display:none" onchange="importBackup(this.files[0]);this.value=''">
+      </label>
+    </div>
+    <div style="overflow-x:auto;margin-top:6px"><table id="histTable" style="font-size:11px">
+      <thead><tr><th>入场时间</th><th>出场时间</th><th>入场价</th><th>出场价</th><th>盈亏(元)</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </div>
+
+  <div class="grid">
+    <div class="kpi"><div class="k">收盘价</div><div class="v" id="kClose">--</div><div class="sub">最新15分钟</div></div>
+    <div class="kpi"><div class="k">MA60</div><div class="v" id="kMa60">--</div><div class="sub" id="kMa60Dir">--</div></div>
+    <div class="kpi"><div class="k">价格位置</div><div class="v" id="kSide">--</div><div class="sub">收盘 vs MA60</div></div>
+    <div class="kpi"><div class="k">DIF</div><div class="v" id="kDif">--</div><div class="sub" id="kDifDir">--</div></div>
+    <div class="kpi"><div class="k">DEA</div><div class="v" id="kDea">--</div><div class="sub">MACD(12,26,9)</div></div>
+    <div class="kpi"><div class="k">MACD柱</div><div class="v" id="kHist">--</div><div class="sub" id="kMacdState">--</div></div>
+    <div class="kpi"><div class="k">MA60方向</div><div class="v" id="kMa60Trend">--</div><div class="sub" id="kMa60UpBars">--</div></div>
+    <div class="kpi"><div class="k">站上MA60</div><div class="v" id="kSideBars">--</div><div class="sub">连续根数</div></div>
+  </div>
+
+  <div class="panel">
+    <h3>15分钟K线走势（MA60 + MACD）</h3>
+    <canvas id="chart"></canvas>
+    <div class="legend">
+      <span><i class="dot" style="background:#e6edf3"></i>K线</span>
+      <span><i class="dot" style="background:#7ab3ff"></i>MA60</span>
+      <span><i class="dot" style="background:#ff5c5c"></i>MACD多头</span>
+      <span><i class="dot" style="background:#39d353"></i>MACD空头</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>最近15根K线明细</h3>
+    <div style="overflow-x:auto"><table id="kTable">
+      <thead><tr><th>时间</th><th>收盘</th><th>MA60</th><th>位置</th><th>DIF</th><th>DEA</th><th>MACD态</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </div>
+
+  <div class="foot">数据源：ETF用腾讯财经，期货用新浪财经（自动切换）· 仅供研究参考，不构成投资建议<br>系统规则：15分钟收盘&gt;MA60 且 MACD金叉态 → 可做多；收盘&lt;MA60 且 MACD死叉态 → 平仓</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ================= 标的配置 =================
+const ASSETS={
+  'sh510500':{n:'中证500ETF',type:'etf'},
+  'sh510300':{n:'沪深300ETF',type:'etf'},
+  'sh510050':{n:'上证50ETF',type:'etf'},
+  'sz159915':{n:'创业板ETF',type:'etf'},
+  'sh588000':{n:'科创50ETF',type:'etf'},
+  'sh512880':{n:'证券ETF',type:'etf'},
+  'sh518880':{n:'黄金ETF',type:'etf'},
+  'IF2609':{n:'中证500期指',type:'fut'},
+  'IC2609':{n:'中证1000期指',type:'fut'},
+  'RB2610':{n:'螺纹钢主力',type:'fut'},
+  'AU2612':{n:'沪金主力',type:'fut'}
+};
+const Store={code:'sh510500',type:'etf',data:null,ind:null,lastUpdate:null};
+const $=id=>document.getElementById(id);
+const POS_KEY='zhuque_pos_v1';
+
+// ================= 云端同步（后端API） =================
+const TOKEN_KEY='zhuque_token';
+const USER_KEY='zhuque_user';
+function getToken(){return localStorage.getItem(TOKEN_KEY)}
+function getUser(){try{return JSON.parse(localStorage.getItem(USER_KEY))}catch{return null}}
+let cloudOk=!!getToken();
+
+async function api(path,opts={}){
+  const token=getToken();
+  const headers={'Content-Type':'application/json',...(opts.headers||{})};
+  if(token)headers['Authorization']=`Bearer ${token}`;
+  const res=await fetch(`/api${path}`,{...opts,headers});
+  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error||'请求失败')}
+  return res.json();
+}
+
+// 云端状态指示（未登录时给出醒目提示）
+function cloudBadge(){
+  const b=$('cloudBadge');
+  if(!b)return;
+  if(cloudOk){
+    b.textContent='☁️ 云端已连接';
+    b.style.background='rgba(57,211,83,.15)';
+    b.style.color='var(--down)';
+    b.style.borderColor='var(--down)';
+    b.style.border='1px solid var(--down)';
+    b.title='已登录：模拟交易记录自动云端保存，跨设备可见';
+  }else{
+    b.textContent='⚠ 本地模拟 · 记录仅存本浏览器';
+    b.style.background='rgba(230,196,92,.15)';
+    b.style.color='var(--warn)';
+    b.style.borderColor='var(--warn)';
+    b.style.border='1px solid var(--warn)';
+    b.title='未登录：模拟交易记录仅保存在当前浏览器，换浏览器/清缓存会丢失，建议导出备份';
+  }
+}
+// 从云端拉取持仓+交易记录，合并进localStorage
+async function syncFromCloud(){
+  if(!getToken()){cloudOk=false;cloudBadge();return;}
+  try{
+    const [pos,tr]=await Promise.all([
+      api('/positions'),
+      api('/trades')
+    ]);
+    const all=loadPos();
+    for(const p of pos||[]){
+      const cur=all[p.symbol]||{state:'out',inTime:null,inPrice:null,history:[]};
+      all[p.symbol]={state:p.state,inTime:p.in_time,inPrice:p.in_price?+p.in_price:null,history:cur.history||[]};
+    }
+    for(const t of tr||[]){
+      const cur=all[t.symbol]||{state:'out',inTime:null,inPrice:null,history:[]};
+      if(!cur.history)cur.history=[];
+      const dup=cur.history.some(h=>h.inTime===t.in_time&&h.outTime===t.out_time);
+      if(!dup)cur.history.push({inTime:t.in_time,outTime:t.out_time,inPrice:+t.in_price,outPrice:+t.out_price,pnl:+t.pnl,_pushed:true});
+      all[t.symbol]=cur;
+    }
+    savePos(all);
+    cloudOk=true;
+  }catch(e){cloudOk=false}
+  cloudBadge();
+}
+// 推送当前标的状态+最新交易到云端
+async function pushToCloud(){
+  if(!getToken())return;
+  const all=loadPos();
+  const p=all[Store.code];
+  if(!p)return;
+  try{
+    await api('/positions',{
+      method:'POST',
+      body:JSON.stringify({symbol:Store.code,state:p.state||'out',in_time:p.inTime,in_price:p.inPrice})
+    });
+    const hist=p.history||[];
+    const pending=hist.filter(h=>!h._pushed);
+    for(const h of pending){
+      try{
+        await api('/trades',{
+          method:'POST',
+          body:JSON.stringify({symbol:Store.code,in_time:h.inTime,out_time:h.outTime,in_price:h.inPrice,out_price:h.outPrice,pnl:h.pnl})
+        });
+        h._pushed=true;
+      }catch(e){}
+    }
+    if(pending.length){const old=loadPos();const cur=old[Store.code];if(cur)cur.history=hist;savePos(old);}
+    cloudOk=true;
+  }catch(e){cloudOk=false}
+  cloudBadge();
+}
+
+// ================= 持仓存取 =================
+function loadPos(){try{return JSON.parse(localStorage.getItem(POS_KEY))||{}}catch(e){return{}}}
+function savePos(p){try{localStorage.setItem(POS_KEY,JSON.stringify(p))}catch(e){}}
+function getPos(){const all=loadPos();return all[Store.code]||{state:'out',inTime:null,inPrice:null,history:[]}}
+function setPos(p){const all=loadPos();all[Store.code]=p;savePos(all)}
+
+// ================= 工具函数 =================
+function fmtTime(t){
+  if(!t)return '--';const s=String(t);
+  return s.length>=12?s.slice(4,6)+'-'+s.slice(6,8)+' '+s.slice(8,10)+':'+s.slice(10,12):t;
+}
+function calcMA(arr,p){
+  const r=[];
+  for(let i=0;i<arr.length;i++){
+    if(i<p-1){r.push(null);continue}
+    let s=0;for(let j=i-p+1;j<=i;j++)s+=arr[j];
+    r.push(s/p);
+  }
+  return r;
+}
+function calcEMA(arr,p){
+  const k=2/(p+1);const r=[];let prev=arr[0];
+  for(let i=0;i<arr.length;i++){prev=i===0?arr[0]:arr[i]*k+prev*(1-k);r.push(prev)}
+  return r;
+}
+function calcMACD(closes){
+  const ema12=calcEMA(closes,12), ema26=calcEMA(closes,26);
+  const dif=closes.map((_,i)=>ema12[i]-ema26[i]);
+  const dea=calcEMA(dif,9);
+  const hist=dif.map((d,i)=>(d-dea[i])*2);
+  return {dif,dea,hist};
+}
+function dirSeq(arr,p){
+  let up=0,down=0;
+  for(let i=arr.length-1;i>0&&i>=arr.length-p;i--){
+    if(arr[i]==null||arr[i-1]==null)break;
+    if(arr[i]>arr[i-1])up++;else if(arr[i]<arr[i-1])down++;
+  }
+  return {up,down};
+}
+
+// ================= 数据获取 =================
+async function fetchTimeout(url,ms=9000,opts={}){
+  const ctl=new AbortController();const timer=setTimeout(()=>ctl.abort(),ms);
+  try{return await fetch(url,{...opts,signal:ctl.signal})}finally{clearTimeout(timer)}
+}
+async function fetchKlineTencent(code,count){
+  const url=`https://ifzq.gtimg.cn/appstock/app/kline/mkline?param=${code},m15,,${count}`;
+  const res=await fetchTimeout(url);const json=await res.json();
+  const d=json.data&&json.data[code];
+  if(!d||!d.m15||!d.m15.length)throw new Error('腾讯无数据');
+  return d.m15.map(k=>({time:String(k[0]),open:+k[1],high:+k[2],low:+k[3],close:+k[4],volume:+k[5]}));
+}
+async function fetchKlineFut(symbol,count){
+  // 新浪期货接口无CORS头，改用JSONP（script标签）方式加载
+  const arr=await futJSONP(symbol);
+  if(!arr||!arr.length)throw new Error('新浪期货无数据');
+  const full=arr.map(k=>({time:k.d.replace(/[-: ]/g,'').slice(0,12),open:+k.o,high:+k.h,low:+k.l,close:+k.c,volume:+k.v}));
+  return full.slice(-count);
+}
+function futJSONP(symbol){
+  return new Promise((resolve,reject)=>{
+    window._t=undefined;
+    const s=document.createElement('script');
+    const url=`https://stock2.finance.sina.com.cn/futures/api/jsonp.php/var%20_t=/InnerFuturesNewService.getFewMinLine?symbol=${symbol}&type=15`;
+    s.src=url;
+    const done=(fn,arg)=>{try{document.head.removeChild(s)}catch(e){};fn(arg)};
+    s.onload=()=>setTimeout(()=>done(resolve,window._t||[]),50);
+    s.onerror=()=>done(reject,new Error('期货JSONP失败'));
+    document.head.appendChild(s);
+    setTimeout(()=>{if(window._t===undefined){done(reject,new Error('期货数据超时'))}},9000);
+  });
+}
+async function fetchQuote(){
+  const code=Store.code;
+  // ETF: 腾讯实时（含CORS）
+  if(Store.type==='etf'){
+    try{
+      const url='https://qt.gtimg.cn/q='+code;
+      const res=await fetchTimeout(url,5000);const text=await res.text();
+      const m=text.match(/"([^"]*)"/);
+      if(m){const f=m[1].split('~');
+        if(f.length>35){
+          const price=+f[3],pct=+f[32];
+          showPrice(price,pct);return;
+        }
+      }
+    }catch(e){}
+  }else{
+    // 期货: 新浪实时
+    try{
+      const url='https://hq.sinajs.cn/list=nf_'+code;
+      const res=await fetchTimeout(url,5000,{headers:{Referer:'https://finance.sina.com.cn'}});
+      const text=await res.text();
+      const m=text.match(/"([^"]*)"/);
+      if(m){const f=m[1].split(',');
+        if(f.length>8&&+f[0]>0){
+          const price=+f[0],prev=+f[8]||+f[1];
+          const pct=prev?((price-prev)/prev*100):0;
+          showPrice(price,pct);return;
+        }
+      }
+    }catch(e){}
+  }
+  // 兜底: K线最新收盘
+  if(Store.data&&Store.data.length){
+    const last=Store.data[Store.data.length-1].close;
+    showPrice(last,0);
+  }
+}
+function showPrice(price,pct){
+  $('hdrPrice').textContent=price.toFixed(3);
+  const c=$('hdrChg');c.textContent=(pct>=0?'+':'')+pct.toFixed(2)+'%';
+  c.className='flat '+(pct>0?'up':pct<0?'down':'');
+}
+function isMarketOpen(){
+  const now=new Date();const d=now.getDay(),h=now.getHours(),m=now.getMinutes(),t=h*60+m;
+  if(d===0||d===6)return false;
+  return (t>=9*60+15&&t<=11*60+30)||(t>=13*60&&t<=15*60);
+}
+
+// ================= 信号分析 =================
+function analyze(){
+  const d=Store.data;
+  if(!d||d.length<70)return null;
+  const closes=d.map(k=>k.close);
+  const ma60=calcMA(closes,60);
+  const {dif,dea,hist}=calcMACD(closes);
+  const n=closes.length-1;
+  const c=closes[n],m60=ma60[n],difV=dif[n],deaV=dea[n],histV=hist[n];
+  const above=c>m60;
+  const golden=difV>deaV;
+  const dd=dirSeq(ma60,5);
+  const ma60dir=dd.up>dd.down?'向上':(dd.down>dd.up?'向下':'走平');
+  let sideBars=1;const a0=above;
+  for(let i=n-1;i>0;i--){if(ma60[i]==null)break;const a1=closes[i]>ma60[i];if(a1===a0)sideBars++;else break;}
+  let difUp=0;for(let i=n;i>0&&i>n-5;i--){if(dif[i]>dif[i-1])difUp++}
+  const difdir=difUp>=3?'向上':(difUp<=1?'向下':'走平');
+  return {closes,ma60,dif,dea,hist,n,c,m60,difV,deaV,histV,above,golden,ma60dir,sideBars,difdir};
+}
+function decide(ind){
+  let state,stateLabel,action,pred;
+  if(ind.above&&ind.golden){
+    state='buy';stateLabel='多头信号 · 可入场';
+    action='【多】15分钟收盘在MA60上方 且 MACD金叉态 → 符合系统入场条件。若空仓，可在下一根15分钟开盘买入（固定100万）；若已持仓，继续持有。';
+    pred='当前多头状态：价格在MA60上方、MACD金叉态。历史回测显示此类信号后趋势延续概率较高。若下一根仍站上MA60且MACD保持金叉，持有为主；若收盘跌破MA60 且 MACD转死叉，触发出场条件，应平仓。';
+  }else if(!ind.above&&!ind.golden){
+    state='wait';stateLabel='空头状态 · 空仓等待';
+    action='【空】15分钟收盘在MA60下方 且 MACD死叉态 → 系统出场条件已满足。当前不应持有多单，空仓等待下一次多头信号。';
+    pred='当前空头状态。系统只做多，此时不入场。需等：①价格重新站上MA60；②MACD重新金叉，两者同时满足才考虑买入。信号出现前保持空仓，避免抄底。';
+  }else if(ind.above&&!ind.golden){
+    state='watch';stateLabel='观察 · 价上但MACD弱';
+    action='【观察】价格仍在MA60上方，但MACD已转死叉态 → 趋势动能减弱，处于观察区。若持仓，密切关注是否跌破MA60；若空仓，暂不追高。';
+    pred='价格还在MA60上方，但MACD死叉说明短线动能转弱。两种可能：①守稳MA60、MACD重新金叉 → 重回多头（可继续持有/入场）；②收盘跌破MA60且MACD维持死叉 → 触发出场，应离场。重点盯MA60得失。';
+  }else{
+    state='watch';stateLabel='观察 · 价下但MACD金叉';
+    action='【观察】价格在MA60下方，但MACD已金叉 → 下跌中的反弹信号。系统只做多，此时还不满足入场条件（需站上MA60），暂观望。';
+    pred='价格在MA60下方但MACD金叉，是下跌途中的反弹迹象。不满足系统做多条件（需同时站上MA60且MACD金叉），建议观望。若反弹带动价格站上MA60且MACD保持金叉 → 转多头可入场；若反弹夭折、MACD再死叉 → 继续空仓等待。';
+  }
+  return {state,stateLabel,action,pred};
+}
+
+// ================= 渲染 =================
+function render(){
+  const ind=analyze();
+  if(!ind){showToast('K线不足70根，无法计算MA60','warn');return}
+  const d=Store.data;const n=ind.n;
+  $('dataTime').innerHTML='<span>K线时间</span><b>'+fmtTime(d[n].time)+'</b>';
+  $('hdrTime').textContent=new Date().toLocaleTimeString('zh-CN',{hour12:false});
+  const dec=decide(ind);
+  const b=$('sigBadge');
+  b.className='sig-badge '+dec.state;
+  b.textContent=dec.stateLabel;
+  $('stateTitle').textContent=dec.stateLabel;
+  $('stateDesc').textContent=dec.action;
+  $('statePred').innerHTML='<b>走势预判：</b>'+dec.pred;
+  const c=ind.c,m=ind.m60;
+  $('kClose').textContent=c.toFixed(3);
+  $('kClose').className='v '+(c>m?'up':'down');
+  $('kMa60').textContent=m?m.toFixed(3):'--';
+  const dm=$('kMa60Dir');dm.textContent=ind.ma60dir;dm.className='sub '+(ind.ma60dir==='向上'?'up':ind.ma60dir==='向下'?'down':'');
+  $('kSide').textContent=ind.above?'上方':'下方';
+  $('kSide').className='v '+(ind.above?'up':'down');
+  $('kSideBars').textContent=ind.sideBars+'根';
+  $('kDif').textContent=ind.difV.toFixed(4);$('kDif').className='v '+(ind.difV>0?'up':'down');
+  $('kDifDir').textContent='DIF '+ind.difdir;
+  $('kDea').textContent=ind.deaV.toFixed(4);
+  $('kHist').textContent=ind.histV>=0?'+'+ind.histV.toFixed(4):ind.histV.toFixed(4);
+  $('kHist').className='v '+(ind.histV>=0?'up':'down');
+  $('kMacdState').textContent=ind.golden?'金叉态':'死叉态';
+  $('kMacdState').className='sub '+(ind.golden?'up':'down');
+  $('kMa60Trend').textContent=ind.ma60dir;
+  $('kMa60Trend').className='v '+(ind.ma60dir==='向上'?'up':ind.ma60dir==='向下'?'down':'');
+  $('kMa60UpBars').textContent='近5根均线方向';
+  const tb=$('kTable').querySelector('tbody');tb.innerHTML='';
+  for(let i=Math.max(60,n-14);i<=n;i++){
+    const c1=ind.closes[i],m1=ind.ma60[i];
+    const ab=c1>m1,go=ind.dif[i]>ind.dea[i];
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${fmtTime(d[i].time)}</td><td>${c1.toFixed(3)}</td><td>${m1?m1.toFixed(3):'--'}</td>
+      <td class="${ab?'up':'down'}">${ab?'上方':'下方'}</td><td>${ind.dif[i].toFixed(4)}</td><td>${ind.dea[i].toFixed(4)}</td>
+      <td class="${go?'up':'down'}">${go?'金叉':'死叉'}</td>`;
+    tb.appendChild(tr);
+  }
+  renderPos(ind);
+  renderChart(ind);
+}
+// ===== 模拟持仓渲染 =====
+function renderPos(ind){
+  const pos=getPos();
+  const inHold=pos.state==='in';
+  $('posTag').textContent=inHold?'持仓中':'空仓';
+  $('posTag').className='pos-tag '+(inHold?'in':'out');
+  const now=Store.data[Store.data.length-1].close;
+  // 持仓/空仓大横幅信号
+  const pb=$('posBanner');
+  if(pb){
+    pb.className='pos-banner '+(inHold?'in':'out');
+    const atOn=$('autoTradeToggle')?$('autoTradeToggle').checked:false;
+    if(inHold){
+      const pnl=1000000*(now/(+pos.inPrice)-1);
+      $('pbText').textContent='当前持仓中';
+      $('pbSub').textContent='入场 '+fmtTime(pos.inTime)+' @ '+(+pos.inPrice).toFixed(3)+' · 持仓中';
+      $('pbRight').innerHTML='浮动 <b class="'+(pnl>0?'up':pnl<0?'down':'')+'">'+(pnl>=0?'+':'')+pnl.toFixed(0)+'元</b>';
+    }else{
+      $('pbText').textContent='当前空仓';
+      $('pbSub').textContent=atOn?'自动交易已开启 · 出现多头信号将自动买入100万':'自动交易已关闭 · 出现多头信号请手动买入';
+      $('pbRight').textContent='固定100万/笔';
+    }
+  }
+  if(inHold){
+    $('pgTime').textContent=fmtTime(pos.inTime);
+    $('pgIn').textContent=(+pos.inPrice).toFixed(3);
+    $('pgNow').textContent=now.toFixed(3);
+    const pnl=1000000*(now/(+pos.inPrice)-1);
+    const p=$('pgPnl');p.textContent=(pnl>=0?'+':'')+pnl.toFixed(0)+'元';
+    p.className='v '+(pnl>0?'up':pnl<0?'down':'');
+  }else{
+    $('pgTime').textContent='--';$('pgIn').textContent='--';
+    $('pgNow').textContent=now.toFixed(3);$('pgPnl').textContent='--';
+    $('pgPnl').className='v';
+  }
+  const hist=pos.history||[];
+  const total=hist.reduce((s,h)=>s+h.pnl,0);
+  const t=$('pgTotal');t.textContent=(total>=0?'+':'')+total.toFixed(0)+'元';
+  t.className='v '+(total>0?'up':total<0?'down':'');
+  $('pgN').textContent=hist.length;
+  // 交易记录表
+  const ht=$('histTable').querySelector('tbody');ht.innerHTML='';
+  const recent=hist.slice(-8).reverse();
+  if(recent.length===0){
+    const tr=document.createElement('tr');
+    tr.innerHTML='<td colspan="5" style="color:var(--text3);text-align:center">暂无平仓记录</td>';
+    ht.appendChild(tr);
+  }else{
+    for(const h of recent){
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${fmtTime(h.inTime)}</td><td>${fmtTime(h.outTime)}</td>
+        <td>${(+h.inPrice).toFixed(3)}</td><td>${(+h.outPrice).toFixed(3)}</td>
+        <td class="${h.pnl>0?'up':h.pnl<0?'down':'flat'}">${h.pnl>0?'+':''}${h.pnl}</td>`;
+      ht.appendChild(tr);
+    }
+  }
+  // 信号提醒
+  const alert=$('posAlert');alert.className='pos-alert';
+  const st=ind.golden&&ind.above?'buy':(!ind.golden&&!ind.above?'wait':'watch');
+  if(inHold){
+    if(st==='wait'){alert.className='pos-alert show act';alert.textContent='⚠ 出场信号已触发：收盘跌破MA60且MACD死叉 → 建议立即平仓！'}
+    else if(st==='watch'&&!ind.golden){alert.className='pos-alert show warn';alert.textContent='⚠ 持仓警示：MACD已转死叉但价格仍在MA60上方，进入观察区，若跌破MA60请立即平仓。'}
+    else{alert.className='pos-alert show ok';alert.textContent='✓ 持仓符合多头信号，继续持有。'}
+  }else{
+    if(st==='buy'){alert.className='pos-alert show act';alert.textContent='▲ 入场信号已出现：收盘站上MA60且MACD金叉 → 可点击"买入"建仓（固定100万）。'}
+    else{alert.className='pos-alert show';alert.textContent='当前空仓，等待下一次多头信号（收盘>MA60 且 MACD金叉）。'}
+  }
+}
+function doBuy(){
+  if(!Store.data)return;
+  const ind=analyze();if(!ind)return;
+  const pos=getPos();
+  if(pos.state==='in'){showToast('当前已持仓，无需重复买入','warn');return}
+  if(!(ind.above&&ind.golden)){showToast('当前不是多头信号（需收盘>MA60 且 MACD金叉），不建议买入','warn');return}
+  const d=Store.data[Store.data.length-1];
+  pos.state='in';pos.inTime=d.time;pos.inPrice=d.close;
+  setPos(pos);renderPos(ind);
+  pushToCloud();
+  showToast('已买入 @ '+d.close.toFixed(3));
+}
+function doSell(){
+  if(!Store.data)return;
+  const ind=analyze();if(!ind)return;
+  const pos=getPos();
+  if(pos.state!=='in'){showToast('当前空仓，无持仓可平','warn');return}
+  const d=Store.data[Store.data.length-1];
+  const pnl=1000000*(d.close/(+pos.inPrice)-1);
+  const hist=pos.history||[];
+  hist.push({inTime:pos.inTime,outTime:d.time,inPrice:+pos.inPrice,outPrice:d.close,pnl:Math.round(pnl)});
+  pos.history=hist;pos.state='out';pos.inTime=null;pos.inPrice=null;
+  setPos(pos);renderPos(ind);
+  pushToCloud();
+  showToast('已平仓 @ '+d.close.toFixed(3)+'  盈亏 '+(pnl>=0?'+':'')+Math.round(pnl)+'元');
+}
+function doClear(){
+  if(!confirm('确认清空 '+Store.code+' 的全部持仓和交易记录？'))return;
+  setPos({state:'out',inTime:null,inPrice:null,history:[]});
+  if(Store.ind)renderPos(Store.ind);
+  pushToCloud();
+  // 清云端
+  if(getToken()){
+    api('/positions/'+Store.code,{method:'DELETE'}).catch(()=>{});
+    api('/trades/'+Store.code,{method:'DELETE'}).catch(()=>{});
+  }
+  showToast('已清空记录');
+}
+// ================= 本地备份（导出/导入） =================
+function exportBackup(){
+  const all=loadPos();
+  const data={app:'zhuque',ver:1,exportedAt:new Date().toISOString(),positions:all};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='zhuque-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  showToast('已导出备份：'+Object.keys(all).length+' 个品种的记录');
+}
+function importBackup(file){
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const data=JSON.parse(reader.result);
+      const positions=(data&&data.app==='zhuque'&&data.positions)?data.positions:data;
+      if(!positions||typeof positions!=='object'||Array.isArray(positions)){
+        showToast('备份文件格式不正确','err');return;
+      }
+      savePos(positions);
+      if(Store.ind)renderPos(Store.ind);
+      showToast('导入成功：已恢复 '+Object.keys(positions).length+' 个品种的记录');
+    }catch(e){showToast('备份文件解析失败：'+e.message,'err');}
+  };
+  reader.readAsText(file);
+}
+// ================= 自动交易 =================
+function autoTrade(){
+  if(!$('autoTradeToggle')||!$('autoTradeToggle').checked)return;
+  if(!Store.data)return;
+  const ind=analyze();if(!ind)return;
+  const pos=getPos();
+  if(pos.state!=='in'){
+    // 空仓：多头信号 → 自动买入100万
+    if(ind.above&&ind.golden){
+      showToast('⚡ 自动交易：检测到多头信号，自动买入100万','warn');
+      doBuy();
+    }
+  }else{
+    // 持仓：空头信号 → 自动平仓
+    if(!ind.above&&!ind.golden){
+      showToast('⚡ 自动交易：检测到离场信号，自动平仓','warn');
+      doSell();
+    }
+  }
+}
+function updateAutoTradeUI(){
+  if(!$('posBanner'))return;
+  const on=$('autoTradeToggle').checked;
+  const pos=getPos();
+  const inHold=pos.state==='in';
+  if(!inHold){
+    $('pbSub').textContent=on?'自动交易已开启 · 出现多头信号将自动买入100万':'自动交易已关闭 · 出现多头信号请手动买入';
+  }
+}
+function renderChart(ind){
+  const cv=$('chart'),ctx=cv.getContext('2d');
+  const W=cv.clientWidth,H=cv.clientHeight;
+  cv.width=W;cv.height=H;
+  const start=Math.max(60,ind.n-119);
+  const sliceC=ind.closes.slice(start),sliceM=ind.ma60.slice(start),sliceH=ind.hist.slice(start);
+  const n=sliceC.length;
+  let lo=Math.min(...sliceC),hi=Math.max(...sliceC);
+  const ml=sliceM.filter(v=>v!=null);
+  if(ml.length){lo=Math.min(lo,...ml);hi=Math.max(hi,...ml)}
+  const pad=(hi-lo)*0.06;lo-=pad;hi+=pad;
+  const top=8,bottom=H*0.42,ch=bottom-top;
+  const mid=bottom+(H-bottom)*0.5,ch2=H-bottom;
+  let mh=Math.max(...sliceH.map(Math.abs));if(mh===0)mh=1;
+  const cw=W/n,bw=Math.max(1,cw*0.6);
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='#21262d';ctx.lineWidth=1;
+  for(let i=1;i<5;i++){const y=top+ch*i/5;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+  for(let i=0;i<n;i++){
+    const x=i*cw+cw/2,hv=sliceH[i];
+    const hh=Math.abs(hv)/mh*(ch2-8);
+    ctx.fillStyle=hv>=0?'rgba(255,92,92,.55)':'rgba(57,211,83,.55)';
+    const y0=hv>=0?mid-hh:mid;
+    ctx.fillRect(x-bw/2,y0,bw,Math.max(1,hh));
+  }
+  for(let i=0;i<n;i++){
+    const x=i*cw+cw/2;
+    const k=Store.data[start+i];
+    const o=top+(hi-k.open)/(hi-lo)*ch,cl=top+(hi-k.close)/(hi-lo)*ch;
+    const hh2=top+(hi-k.high)/(hi-lo)*ch,ll=top+(hi-k.low)/(hi-lo)*ch;
+    ctx.strokeStyle=cl>=o?'#ff5c5c':'#39d353';ctx.fillStyle=ctx.strokeStyle;ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(x,hh2);ctx.lineTo(x,ll);ctx.stroke();
+    ctx.fillRect(x-bw/2,Math.min(o,cl),bw,Math.max(1,Math.abs(cl-o)));
+  }
+  ctx.strokeStyle='#7ab3ff';ctx.lineWidth=1.6;ctx.beginPath();
+  let pen=false;
+  for(let i=0;i<n;i++){const v=sliceM[i];if(v==null){pen=false;continue}
+    const x=i*cw+cw/2,y=top+(hi-v)/(hi-lo)*ch;
+    if(!pen){ctx.moveTo(x,y);pen=true}else ctx.lineTo(x,y)}
+  ctx.stroke();
+  const last=sliceC[n-1],ly=top+(hi-last)/(hi-lo)*ch;
+  ctx.strokeStyle='rgba(230,237,243,.4)';ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(0,ly);ctx.lineTo(W,ly);ctx.stroke();ctx.setLineDash([]);
+}
+function showToast(msg,type){
+  const t=$('toast');t.textContent=msg;
+  t.className='toast '+(type||'');t.style.opacity=1;
+  setTimeout(()=>t.style.opacity=0,2600);
+}
+
+// ================= 标的切换 =================
+function buildAssetList(){
+  const sel=$('assetSel');
+  sel.innerHTML='';
+  for(const [code,a] of Object.entries(ASSETS)){
+    const o=document.createElement('option');
+    o.value=code;o.textContent=a.n+'（'+code+'）';
+    sel.appendChild(o);
+  }
+  sel.value=Store.code;
+}
+function onAssetChange(){
+  setAsset($('assetSel').value);
+}
+function onCustomAsset(){
+  const v=$('symInput').value.trim().toUpperCase();
+  if(!v){showToast('请输入代码，如 sh510300 或 IF2609','warn');return}
+  setAsset(v);
+}
+function setAsset(code){
+  const known=ASSETS[code];
+  let type='etf';
+  if(known)type=known.type;
+  else if(/^[A-Z]{1,2}\d{4}$/.test(code))type='fut'; // 期货 IF2609
+  else type='etf';
+  Store.code=code;Store.type=type;
+  $('assetSel').value=ASSETS[code]?code:'';
+  const nm=ASSETS[code]?ASSETS[code].n:(type==='fut'?code+'期指':code);
+  document.title=nm+' · 朱雀MA60+MACD';
+  fetchFromAPI(true);
+}
+async function fetchFromAPI(manual){
+  const btn=document.querySelector('.btn.ghost');btn.disabled=true;
+  let ok=false,err='';
+  if(Store.type==='etf'){
+    try{Store.data=await fetchKlineTencent(Store.code,160);ok=true}catch(e){err='腾讯ETF:'+e.message+';'}
+    if(!ok){try{Store.data=await fetchKlineSina(Store.code,160);ok=true}catch(e){err+='新浪:'+e.message}}
+  }else{
+    try{Store.data=await fetchKlineFut(Store.code,160);ok=true}catch(e){err='新浪期货:'+e.message}
+  }
+  btn.disabled=false;
+  if(!ok){showToast('数据获取失败：'+err,'err');return}
+  Store.lastUpdate=new Date();
+  render();fetchQuote();
+  if(!manual){autoTrade();}else{showToast('数据已更新');}
+}
+async function fetchKlineSina(code,count){
+  const url=`https://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=${code}&scale=15&ma=no&datalen=${count}`;
+  const res=await fetchTimeout(url);const text=await res.text();
+  const json=JSON.parse(text);
+  if(!json||!json.length)throw new Error('新浪无数据');
+  return json.map(k=>({time:k.day.replace(/[-: ]/g,'').slice(0,12),open:+k.open,high:+k.high,low:+k.low,close:+k.close,volume:+k.volume}));
+}
+let autoTimer=null;
+// 自动刷新循环：对齐到15分钟K线收盘时刻（分钟数%15==0），收盘后拉取数据并检查自动交易
+function autoLoop(){
+  if(isMarketOpen())fetchFromAPI(false); // 非manual → 拉取后触发autoTrade
+  autoTimer=setTimeout(autoLoop,15*60*1000);
+}
+function setupAuto(){
+  const on=$('autoToggle').checked;
+  if(autoTimer){clearTimeout(autoTimer);autoTimer=null}
+  if(on){
+    const now=new Date();
+    const wait=((15-(now.getMinutes()%15))%15)*60000 - now.getSeconds()*1000 - now.getMilliseconds();
+    autoTimer=setTimeout(autoLoop,Math.max(wait,1000));
+  }
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  buildAssetList();setupAuto();updateAutoTradeUI();
+  // 支持URL参数直达标的: ?code=IF2609 或 ?code=sh510300
+  const params=new URLSearchParams(location.search);
+  const c=params.get('code');
+  if(c){
+    const known=ASSETS[c];
+    Store.code=c;Store.type=known?known.type:(/^[A-Z]{1,2}\d{4}$/.test(c)?'fut':'etf');
+    buildAssetList();
+  }
+  // 测试钩子（开发验证用，正常使用可忽略）
+  if(params.get('clear')==='1'){
+    setTimeout(()=>{setPos({state:'out',inTime:null,inPrice:null,history:[]});render();},600);
+  }
+  if(params.get('testpos')==='1'||params.get('testpos')==='2'){
+    setTimeout(()=>{
+      if(Store.data&&Store.data.length){
+        const p=getPos();
+        if(p.state!=='in'){
+          const k=Store.data[Store.data.length-1];
+          p.state='in';p.inTime=k.time;p.inPrice=k.close;
+          setPos(p);render();
+        }
+        if(params.get('testpos')==='2'){ // 自动平仓验证
+          setTimeout(()=>{doSell();},800);
+        }
+      }
+    },1500);
+  }
+  fetchFromAPI(true);
+  // 从Supabase云端拉取持仓/交易记录
+  syncFromCloud().then(()=>{if(Store.ind)renderPos(Store.ind)});
+  setInterval(()=>{if(isMarketOpen())fetchQuote();$('hdrTime').textContent=new Date().toLocaleTimeString('zh-CN',{hour12:false})},30000);
+});
+</script>
+</body>
+</html>
